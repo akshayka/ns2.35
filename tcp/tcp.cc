@@ -1039,10 +1039,10 @@ double TcpAgent::linear(double x, double x_1, double y_1, double x_2, double y_2
  */
 double TcpAgent::limited_slow_start(double cwnd, int max_ssthresh, double increment)
 {
-        if (max_ssthresh <= 0) {
+    if (max_ssthresh <= 0) {
 	  	return increment;
 	} else {
-                double increment1 = 0.0;
+        double increment1 = 0.0;
 		int round = int(cwnd / (double(max_ssthresh)/2.0));
 		if (round > 0) {
 		  	increment1 = 1.0/double(round); 

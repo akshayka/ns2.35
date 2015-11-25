@@ -37,7 +37,7 @@ proc Usage {} {
     global opt argv0
     puts "Usage: $argv0 \[-simtime seconds\] \[-seed value\] \[-nsrc numSources\]"
     puts "\t\[-tr tracefile\]"
-    puts "\t\[-bw $opt(bneck)] \[-delay $opt(delay)\]"
+    puts "\t\[-bneck $opt(bneck)] \[-delay $opt(delay)\]"
     exit 1
 }
 

@@ -1128,6 +1128,8 @@ Agent/TCP/Asym set g_ 0.125
 Agent/TCP/Reno/Asym set g_ 0.125
 Agent/TCP/Newreno/Asym set g_ 0.125
 
+Agent/TCP/MaxThroughput set maxcwnd_ 1000
+
 Agent/TCP/Rational set count_bytes_acked_ 1
 Agent/TCP/Rational set tracewhisk_ 0
 Agent/TCP/Rational set timestamps_ true

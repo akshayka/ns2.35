@@ -6,8 +6,15 @@ global opt
 set opt(nsrc) 8;                # number of sources in experiment
 set opt(tcp) TCP/Rational
 set opt(sink) TCPSink
-set opt(cycle_protocols) false
-set protocols [list TCP/Rational TCP/Newreno TCP/Linux/cubic TCP/Linux/compound]; # don't put Linux TCPs first on list
+set opt(cycle_protocols) false; # Only cycle through below protocols if true
+set protocols {
+    TCP/Rational
+    TCP/MaxThroughput
+    TCP/MinDelay
+    TCP/NaiveQ
+    TCP/Newreno
+    TCP/Linux/cubic
+    TCP/Linux/compound}; # don't put Linux TCPs first on list
 set protosinks [list TCPSink TCPSink TCPSink TCPSink]
 #set protocols [list TCP/Newreno TCP/Linux/cubic]
 #set protosinks [list TCPSink TCPSink/Sack1/DelAck]

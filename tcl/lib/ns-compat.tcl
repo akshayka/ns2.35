@@ -635,7 +635,11 @@ OldSim instproc init args {
 	set classMap_(facktcp) Agent/TCP/Fack
 	set classMap_(tcp-newreno) Agent/TCP/Newreno
 	set classMap_(tcpnewreno) Agent/TCP/Newreno
+    # TODO: should this read tcp-rational?
 	set classMap_(tcpnewreno) Agent/TCP/Rational
+    set classMap_(tcp-max-throughput) Agent/TCP/MaxThroughput
+    set classMap_(tcp-min-delay) Agent/TCP/MinDelay
+    set classMap_(tcp-q-learning) Agent/TCP/NaiveQ
 	set classMap_(cbr) Agent/CBR
 	set classMap_(tcp-sink) Agent/TCPSink
 	set classMap_(tcp-sack1) Agent/TCP/Sack1

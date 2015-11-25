@@ -32,12 +32,13 @@ my ($dir) = @ARGV;
 my %protos;
 my %nsrcs;
 
-for ( glob "$dir*/*" ) {
+for ( glob "$dir*" ) {
   if ( m{graphdir} ) {
     die "Found ${dir}graphdir directory from previous run. This needs to be deleted.\n";
   }
 
-  my ($delta) = m{-rational-delta(.*?)/};
+  # TODO(akshayka): Check if delta regex works
+  my ($delta) = m{.*/*Rational-delta(\d*\.?\d*)\.};
   my ($protocol) = m{.*/(.*?)\.};
   my ($nsrc) = m{nconn(\d+)};
 
@@ -90,6 +91,7 @@ for my $nsrc ( keys %protos ) {
     open DATA, $origdir . '/' . $filename or die "can't open $filename: $!";
     open ELLIPSE, "|$origdir/ellipsemaker > $protocol-$nsrc.ellipse" or die;
     open RAWDATA, ">$protocol-$nsrc.pts" or die;
+    print "$protocol $filename\n";
     my @rtts = ();
     my @mbpss = ();
     while ( <DATA> ) {
@@ -98,10 +100,11 @@ for my $nsrc ( keys %protos ) {
       my ( $mbps, $fct, $rtt, $onperc ) = m{rMbps: (.*?) fctMs: (.*?) .*?sndrttMs (.*?) .*?onperc: (.*?)$};
 
       if ( not defined $rtt ) {
-	die "line did not match pattern: $_";
+    die "line did not match pattern: $_";
       } elsif ( $onperc == 0 ) {
-	print STDERR "WARNING: sender was never on: $_";
-	next;
+        print STDERR "Proto $protocol\n";
+        print STDERR "WARNING: sender was never on: $_";
+        next;
       }
 
       $rtt -= $MIN_RTT;
@@ -183,6 +186,8 @@ HERE
     $nicename =~ s{TCP-Newreno}{NewReno};
     $nicename =~ s{TCP-Linux-cubic}{Cubic};
     $nicename =~ s{TCP-Linux-compound}{Compound};
+    $nicename =~ s{TCP-MaxThroughput}{MaxThroughput};
+    $nicename =~ s{TCP-MinDelay}{MinDelay};
 
 #    $protos{ $nsrc }{ $protocol }{ means }[ 1 ] += .1;
 

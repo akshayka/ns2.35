@@ -1,15 +1,36 @@
+import argparse
+import multiprocessing
 import os
-import sys
-from optparse import OptionParser
 import subprocess
+import sys
+
+# TODO(akshayka): Seems like these are unused
 import matplotlib
 if os.uname()[0] == 'Darwin':
     matplotlib.use('macosx')
 import matplotlib.pyplot as p
 import numpy
 
-def runonce(fullname, proto, w, gateway, nsrc, type, simtime, on, off, outfname):
-    global conffile
+PROTOCOLS = [
+    "TCP/Newreno",
+    "TCP/Linux/cubic",
+    "TCP/Linux/compound",
+    "TCP/Vegas",
+    "TCP/Reno/XCP",
+    "TCP/Rational-0.1",
+    "TCP/Rational-1",
+    "TCP/Rational-10",
+    "TCP/MaxThroughput",
+    "TCP/MinDelay",
+]
+
+# TODO(akshayka): What purpose does this serve?
+AVG_BYTE_LIST = [16000, 96000, 192000]
+
+
+def runonce(conffile, full_proto_name, proto,
+            workload, ontype, gateway, nsrc, simtime,
+            on, off, bneck, outfname, iteration, env=None):
     gw = gateway
     if proto.find("XCP") != -1:
         sink = 'TCPSink/XCPSink'
@@ -19,67 +40,168 @@ def runonce(fullname, proto, w, gateway, nsrc, type, simtime, on, off, outfname)
     else:
         sink = 'TCPSink'
 
-    if fullname.find("CoDel") != -1:
+    if full_proto_name.find("CoDel") != -1:
         gw = "sfqCoDel"
 
-    if type == "bytes":
-        runstr = './remy2.tcl %s -tcp %s -sink %s -gw %s -ontype %s -onrand %s -avgbytes %d -offrand %s -offavg %s -nsrc %d -simtime %d' % (conffile, proto, sink, gw, type, w, on, w, off, nsrc, simtime)
-    elif type == "time":
-        runstr = './remy2.tcl %s -tcp %s -sink %s -gw %s -ontype %s -onrand %s -onavg %d -offrand %s -offavg %s -nsrc %d -simtime %d' % (conffile, proto, sink, gw, type, w, on, w, off, nsrc, simtime)                
+    if ontype == "bytes":
+        runstr = ('./remy2.tcl %s -tcp %s -sink %s -gw %s'
+                 ' -ontype %s -onrand %s -avgbytes %d -offrand %s -offavg %s'
+                 ' -nsrc %d -simtime %d' % (conffile, proto, sink, gw,
+                 ontype, workload, on, workload, off,
+                 nsrc, simtime))
+    elif ontype == "time":
+        runstr = ('./remy2.tcl %s -tcp %s -sink %s -gw %s '
+                 '-ontype %s -onrand %s -onavg %d -offrand %s -offavg %s '
+                 '-nsrc %d -simtime %d' % (conffile, proto, sink, gw,
+                 ontype, workload, on, workload, off,
+                 nsrc, simtime))
     else:
-        runstr = './remy2.tcl %s -tcp %s -sink %s -gw %s -ontype %s -offrand %s -offavg %s -nsrc %d -simtime %d' % (conffile, proto, sink, gw, type, w, off, nsrc, simtime)                
-        
+        runstr = ('./remy2.tcl %s -tcp %s -sink %s -gw %s '
+                 '-ontype %s -offrand %s -offavg %s '
+                 '-nsrc %d -simtime %d' % (conffile, proto, sink, gw,
+                 ontype, workload, off,
+                 nsrc, simtime))
 
-    print runstr
+    if bneck is not None:
+        runstr += ' -bneck ' + bneck
+
+    print ('[' + proto + ']' + 'iteration #' + str(iteration) +
+            ': ' + runstr + ' ...')
+
     fnull = open(os.devnull, "w") 
     fout = open(outfname, "ab")
-    output = subprocess.call(runstr, stdout=fout, stderr=fnull, shell=True)    
+    output = subprocess.call(runstr, stdout=fout, stderr=fnull, shell=True,
+        env=env)
     return
 
-if __name__ == '__main__':
-    parser = OptionParser()
-    parser.add_option("-c", "--conffile", type="string", dest="remyconf", 
-                      default = "", help = "Remy config file (Tcl)") 
-    parser.add_option("-d", "--dirresults", type="string", dest="resdir", 
-                      default = "./tmpres", help = "directory for results")
-    parser.add_option("-p", "--proto", type="string", dest="proto",
-                      default = "TCP/Newreno", help = "protocol")
-    parser.add_option("-t", "--type", type="string", dest="ontype",
-                      default = "bytes", help = "by bytes or by seconds")
-    parser.add_option("-n", "--nsrc", type="int", dest="nsrc",
-                      default = 1, help = "nsrc")
-    (config, args) = parser.parse_args()
 
-    if not os.path.exists(config.resdir):
-        os.mkdir(config.resdir)
+def experiment(conffile, whiskerdir, proto, numsrcs, bneck, worktypes,
+               ontype, onofftimes, avgbytes, simtime, iterations, resdir):
+    fullname = proto
+    myenv = None
+    if 'Rational' in fullname:
+        proto, delta = fullname.split('-')
+        whisker = whiskerdir + 'delta' + delta + '.dna'
+        myenv = os.environ.copy()   
+        myenv['WHISKERS'] = whisker
+        
+    # TODO(akshayka): Why the renaming of cubic?
+    if proto == 'Cubic/sfqCoDel':
+        proto = 'TCP/Linux/cubic'
+    for wrk in worktypes:
+        for onoff in onofftimes:
+            for i in xrange(iterations):
+                if ontype == 'bytes':
+                    outfname = ('%s/%s.%s.nconn%d.%son%d.off%0.2f.simtime%d'
+                               % (resdir,
+                               fullname.replace('/','-'), wrk,
+                               numsrcs, ontype, avgbytes,
+                               onoff, simtime))
+                    runonce(conffile=conffile,
+                            full_proto_name=fullname, proto=proto,
+                            workload=wrk, ontype=ontype, gateway='DropTail',
+                            nsrc=numsrcs, simtime=simtime,
+                            on=avgbytes, off=onoff,
+                            bneck=bneck, outfname=outfname, iteration=i,
+                            env=myenv)
+                else:
+                    outfname = ('%s/%s.%s.nconn%d.%son%d.off%0.2f.simtime%d'
+                               % (resdir,
+                               fullname.replace('/','-'), wrk, numsrcs,
+                               ontype, onoff, onoff, simtime))
+                    runonce(conffile=conffile,
+                            full_proto_name=fullname, proto=proto,
+                            workload=wrk, ontype=ontype, gateway='DropTail',
+                            nsrc=numsrcs, simtime=simtime,
+                            on=onoff, off=onoff,
+                            bneck=bneck, outfname=outfname, iteration=i,
+                            env=myenv)
+                print outfname
 
-    conffile = config.remyconf
 
-    simtime = 100
-    iterations = 128
+def main(args=None):
+    parser = argparse.ArgumentParser(
+        description="experiment runner",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    # protolist = ['TCP/Newreno', 'TCP/Linux/cubic', 'TCP/Linux/compound', 'TCP/Vegas', 'TCP/Reno/XCP', 'TCP/Rational', 'Cubic/sfqCoDel']
+    # Experiment parameters
+    parser.add_argument("-i", "--iterations", type=int, dest="iterations",
+                        default=10,
+                        help="number of experiments to run for each protocol")
+    parser.add_argument("-s", "--simtime", type=float, dest="simtime",
+                        default=100,
+                        help="number of seconds to run each trial")
+    parser.add_argument("-p", "--proto", nargs="+", dest="proto",
+                        default=PROTOCOLS,
+                        help="space-delimited list of protocols")
 
-    protolist = config.proto.split() # which transport protocol(s) are we using?
+    # Remy-specific parameters
+    parser.add_argument("-w", "--whiskerdir", type=str, dest="whiskerdir", 
+                        default=('/home/vagrant/remy-reproduce-1.0/'
+                                'ns-2.35/tcp/remy/rats/new'),
+                        help="directory containing remy whiskers")
+
+    # Network topology
+    parser.add_argument("-c", "--conffile", type=str, dest="remyconf", 
+                        default="remyconf/dumbbell-buf1000-rtt150-bneck15.tcl",
+                        help="path to Remy config file (Tcl)")
+    parser.add_argument("-n", "--nsrc", type=int, dest="nsrc",
+                        help="number of sources",
+                        required=True)
+    parser.add_argument("-t", "--type", type=str, dest="ontype",
+                        default="bytes",
+                        help="by bytes or by seconds")
+    parser.add_argument("-b", "--bandwidth", type=str, dest="bandwidth",
+                        default=None,
+                        help="bandwidth of the bottleneck link, if any")
+
+    # Output
+    parser.add_argument("-d", "--dirresults", type=str, dest="resdir", 
+                        help="directory for results",
+                        required=True)
+
+    args = parser.parse_args(args)
+
+    if not os.path.exists(args.resdir):
+        os.mkdir(args.resdir)
+
+    conffile = args.remyconf
+    simtime = args.simtime
+    iterations = args.iterations
+
+    protolist = args.proto
+    for p in protolist:
+        if p not in PROTOCOLS:
+            print "Unsupported protocol %s " % p
+            print "Supported protocols: " + str(PROTOCOLS)
+            return
+
     onofftimes = [0.5]
-#    avg_byte_list = [16000, 96000, 192000]
-    avgbytes = 100000 # from Allman's March 2012 data and 2013 CCR paper
-    worktypes = ['Exponential']
 
+    # from Allman's March 2012 data and 2013 CCR paper: 100 KB
+    avgbytes = 100000
+    worktypes = ['Exponential']
+    bneck = args.bandwidth
+    numsrcs = args.nsrc
+    ontype = args.ontype
+    whiskerdir = args.whiskerdir
+    resdir = args.resdir
+
+    # Need to parallelize this loop
+    processes = []
     for proto in protolist:
-        fullname = proto
-        if proto == "Cubic/sfqCoDel":
-            proto = "TCP/Linux/cubic"
-        for wrk in worktypes:
-            for onoff in onofftimes:
-                numsrcs = config.nsrc
-                while numsrcs <= config.nsrc:
-                    for i in xrange(iterations):
-                        if config.ontype == "bytes":
-                            outfname = '%s/%s.%s.nconn%d.%son%d.off%d.simtime%d' % (config.resdir, fullname.replace('/','-'), wrk, numsrcs, config.ontype, avgbytes, onoff, simtime)
-                            runonce(fullname, proto, wrk, 'DropTail', numsrcs, config.ontype, simtime, avgbytes, onoff, outfname)
-                        else:
-                            outfname = '%s/%s.%s.nconn%d.%son%d.off%d.simtime%d' % (config.resdir, fullname.replace('/','-'), wrk, numsrcs, config.ontype, onoff, onoff, simtime)
-                            runonce(fullname, proto, wrk, 'DropTail', numsrcs, config.ontype, simtime, onoff, onoff, outfname)
-                        print outfname
-                    numsrcs = 2*numsrcs
+        pr = multiprocessing.Process(target=experiment, args=(conffile,
+                whiskerdir, proto, numsrcs, bneck,
+                worktypes, ontype, onofftimes, avgbytes,
+                simtime, iterations, resdir))
+        processes.append(pr)
+        print 'Launching processes for protocol ' + proto
+        pr.start()
+
+    # Join processes for the sake of hygiene
+    for pr in processes:
+        pr.join()
+
+
+if __name__ == '__main__':
+    main()

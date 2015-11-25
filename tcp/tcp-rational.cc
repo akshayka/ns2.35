@@ -73,9 +73,9 @@ int
 RationalTcpAgent::delay_bind_dispatch(const char *varName, const char *localName, 
 				   TclObject *tracer)
 {
-        if (delay_bind(varName, localName, "tracewhisk_", &tracewhisk_, tracer)) return TCL_OK;
+    if (delay_bind(varName, localName, "tracewhisk_", &tracewhisk_, tracer)) return TCL_OK;
 	if (delay_bind(varName, localName, "_intersend_time", &_intersend_time, tracer)) return TCL_OK;
-        return TcpAgent::delay_bind_dispatch(varName, localName, tracer);
+    return TcpAgent::delay_bind_dispatch(varName, localName, tracer);
 }
 
 
