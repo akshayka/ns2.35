@@ -138,7 +138,7 @@ def main(args=None):
     # Remy-specific parameters
     parser.add_argument("-w", "--whiskerdir", type=str, dest="whiskerdir", 
                         default=('/home/vagrant/remy-reproduce-1.0/'
-                                'ns-2.35/tcp/remy/rats/new'),
+                                'ns-2.35/tcp/remy/rats/new/'),
                         help="directory containing remy whiskers")
 
     # Network topology

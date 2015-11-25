@@ -38,8 +38,7 @@ for ( glob "$dir*" ) {
   }
 
   # TODO(akshayka): Check if delta regex works
-  my ($delta) = m{.*/*Rational-delta(\d*\.?\d*)\.};
-  my ($protocol) = m{.*/(.*?)\.};
+  my ($protocol) = m{.*/([^\.]*\.?\d*)\.};
   my ($nsrc) = m{nconn(\d+)};
 
 #  next if ( $protocol =~ m{XCP} );
@@ -51,10 +50,6 @@ for ( glob "$dir*" ) {
 #  next if ( $protocol =~ m{^TCP-Linux-cubic$} );
 #  next if ( $protocol =~ m{TCP-Newreno} );
 #  next if ( $protocol =~ m{TCP-Linux-compound} );
-
-  if ( defined $delta ) {
-    $protocol .= "-$delta";
-  }
 
   $protos{ $nsrc }{ $protocol }{ filename } = $_;
 
