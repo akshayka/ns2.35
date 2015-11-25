@@ -12,7 +12,8 @@ int QLearn<S>::get_action(S state) const {
     } else {
         double curr_q = get_q(state, kMinAction)
         double q_opt = curr_q;
-        std::vector<int> best_actions { kMinAction };
+        std::vector<int> best_actions;
+        best_actions.push_back(kMinAction);
         for (int a = kMinAction + 1; a <= kMaxAction; ++a) {
             curr_q = get_q(state, a)
             if (curr_q == q_opt) {
@@ -47,7 +48,12 @@ void QLearn<S>::incorporate_feedback(S state, int action,
 }
 
 double QLearn<S>::get_q(S state, int action) {
-
+    std::map<string, double> features = featurize(state, action);
+    double score = 0;
+    for (const auto& kv : features) {
+        score += weights_[kv.first] * kv.second;
+    }
+    return score;
 }
 
 double QLearn<S>::get_v_opt(S state) {

@@ -29,6 +29,7 @@ public:
     virtual void incorporate_feedback(S state, int action,
       double reward, S state_prime);
     virtual std::map<string, double> featurize(S state, int action) const = 0;
+
 private:
     // We use greedy-epsilon search, with 0 <= epsilon_ <= 1
     std::uniform_int_distribution<int> action_distribution_;
