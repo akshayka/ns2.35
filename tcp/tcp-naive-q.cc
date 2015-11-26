@@ -1,9 +1,9 @@
-#include "tcp-q-learning.h"
+#include "tcp-naive-q.h"
 #include <cstdlib>
 
 void NaiveQTcpAgent::output_helper(Packet *pkt) {
 	hdr_tcp *tcph = hdr_tcp::access(pkt);
-    q_.ts_to_state_action[tcph->ts()] = std::make_pair(state_, action_);
+    ts_to_state_action_[tcph->ts()] = std::make_pair(state_, action_);
 }
 
 void NaiveQTcpAgent::recv(Packet *pkt, Handler*) {
@@ -24,14 +24,15 @@ void NaiveQTcpAgent::recv(Packet *pkt, Handler*) {
     // positive rewards are good
     // This is a silly reward function because it doesn't take history
     // into account. Is it? Maybe just the state is silly.
-    auto state_action = q_.ts_to_state_action[tcph->ts_echo()];
+    auto state_action = ts_to_state_action_[tcph->ts_echo()];
+    double reward = (state_action.first.last_rtt - state_.last_rtt) /
         state_action.first.last_rtt;
-    q_.ts_to_state_action.erase(tcph->ts_echo());
+    ts_to_state_action_.erase(tcph->ts_echo());
     q_.incorporate_feedback(state_action.first, state_action.second,
-                            reward, t_rtt_);
+                            reward, state_);
 
     // adjust cwnd and record action chosen!
-    TcpAgent::recv(pkt);
+    TcpAgent::recv(pkt, NULL);
 }
 
 void NaiveQTcpAgent::opencwnd() {
