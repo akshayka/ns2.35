@@ -197,6 +197,7 @@ OBJ_CC = \
 	common/session-rtp.o apps/rtp.o tcp/rtcp.o \
 	common/ivs.o \
 	common/messpass.o common/tp.o common/tpm.o apps/worm.o \
+    tcp/q-learn.o \
 	tcp/tcp.o tcp/tcp-sink.o tcp/tcp-reno.o \
 	tcp/tcp-newreno.o tcp/tcp-rational.o \
     tcp/tcp-naive.o tcp/tcp-naive-q.o tcp/tcp-fast.o \
