@@ -84,9 +84,9 @@ LIB	= \
 	-lm -lprotobuf -pthread @LIBS@
 #	-L@libdir@ \
 
-CFLAGS	+= $(CCOPT) $(DEFINE) 
+CFLAGS	+= $(CCOPT) $(DEFINE) -std=c++11
 #CXXFLAGS += -std=c++0x
-CXXFLAGS += $(CCOPT) $(DEFINE) -std=gnu++0x
+CXXFLAGS += $(CCOPT) $(DEFINE) -std=c++11
 
 # Explicitly define compilation rules since SunOS 4's make doesn't like gcc.
 # Also, gcc does not remove the .o before forking 'as', which can be a
@@ -198,7 +198,8 @@ OBJ_CC = \
 	common/ivs.o \
 	common/messpass.o common/tp.o common/tpm.o apps/worm.o \
 	tcp/tcp.o tcp/tcp-sink.o tcp/tcp-reno.o \
-	tcp/tcp-newreno.o tcp/tcp-rational.o tcp/tcp-fast.o \
+	tcp/tcp-newreno.o tcp/tcp-rational.o \
+    tcp/tcp-naive.o tcp/tcp-naive-q.o tcp/tcp-fast.o \
 	tcp/remy/dna.pb.o tcp/remy/memory.o tcp/remy/memoryrange.o tcp/remy/whisker.o tcp/remy/whiskertree.o \
 	tcp/tcp-vegas.o tcp/tcp-rbp.o tcp/tcp-full.o tcp/rq.o \
 	baytcp/tcp-full-bay.o baytcp/ftpc.o baytcp/ftps.o \
