@@ -22,6 +22,7 @@ PROTOCOLS = [
     "TCP/Rational-10",
     "TCP/MaxThroughput",
     "TCP/MinDelay",
+    "TCP/NaiveQ",
 ]
 
 # TODO(akshayka): What purpose does this serve?
@@ -65,7 +66,7 @@ def runonce(conffile, full_proto_name, proto,
     if bneck is not None:
         runstr += ' -bneck ' + bneck
 
-    print ('[' + proto + ']' + 'iteration #' + str(iteration) +
+    print ('[' + proto + '] ' + 'iteration #' + str(iteration) +
             ': ' + runstr + ' ...')
 
     fnull = open(os.devnull, "w") 

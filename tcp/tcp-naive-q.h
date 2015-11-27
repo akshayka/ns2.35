@@ -6,6 +6,7 @@
 #include <string>
 #include <utility>
 
+#include "debug.h"
 #include "ip.h"
 #include "q-learn.h"
 #include "tcp.h"
@@ -14,11 +15,13 @@ class NaiveState : public learning::State {
 public:
     NaiveState() : rtt_ratio_(-1), min_rtt_(-1), last_rtt_(-1) {};
 
-    std::map<std::string, double> featurize(int action) const {
+    virtual std::map<std::string, double> featurize(int action) const {
         std::map<std::string, double> feature_map;
         std::ostringstream os;
         // It might be a good idea to discretize even more
         os << std::fixed << std::setprecision(1) << rtt_ratio_;
+        DEBUG_STDERR("featurized rtt ratio: " << rtt_ratio_
+                    << " --> " << os.str());
         feature_map[os.str()] = 1;
         feature_map[std::to_string(action)] = 1;
         return feature_map;
@@ -43,11 +46,12 @@ private:
     const double kEpsilon = 0.2;
     const double kDiscount = 0.5;
     const int kMinAction = 0;
-    const int kMaxAction = 1;
+    const int kMaxAction = 2;
     learning::QLearn q_;
     NaiveState state_;
     int action_;
-    std::map<double, std::pair<NaiveState, int>> ts_to_state_action_;
+    std::map<std::pair<double, int>, std::pair<NaiveState, int>>
+        ts_to_state_action_;
 
 public:
     NaiveQTcpAgent() : TcpAgent(),

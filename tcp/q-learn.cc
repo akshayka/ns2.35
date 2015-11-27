@@ -6,7 +6,7 @@
 #include <vector>
 
 namespace learning {
-int QLearn::get_action(State state) {
+int QLearn::get_action(const State& state) {
     ++num_iters_;
     if (epsilon_distribution_(generator_) < epsilon_) {
         return action_distribution_(generator_);
@@ -35,8 +35,8 @@ int QLearn::get_action(State state) {
     }
 }
 
-void QLearn::incorporate_feedback(State state, int action,
-    double reward, State state_prime) {
+void QLearn::incorporate_feedback(const State& state, int action,
+    double reward, const State& state_prime) {
     double eta = get_step_size();
     double feature_scale = eta * (
         get_q(state, action) - (
@@ -45,18 +45,27 @@ void QLearn::incorporate_feedback(State state, int action,
     for (const auto& kv : features) {
         weights_[kv.first] -= feature_scale * kv.second;
     }
+
+#ifdef DEBUG
+    DEBUG_STDERR("features in weights_ vector");
+    for (const auto& kv : weights_) {
+        DEBUG_STDERR(kv.first);
+    }
+#endif
 }
 
-double QLearn::get_q(State state, int action) const {
+double QLearn::get_q(const State& state, int action) {
     std::map<std::string, double> features = state.featurize(action);
     double score = 0;
     for (const auto& kv : features) {
-        score += weights_.at(kv.first) * kv.second;
+        // Implicitly creates an entry for the feature if it does not
+        // yet exist
+        score += weights_[kv.first] * kv.second;
     }
     return score;
 }
 
-double QLearn::get_v_opt(State state) const {
+double QLearn::get_v_opt(const State& state) {
     double curr_v = get_q(state, kMinAction);
     double v_opt = curr_v;
     for (int a = kMinAction + 1; a <= kMaxAction; ++a) {
