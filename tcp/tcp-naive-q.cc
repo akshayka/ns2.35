@@ -20,7 +20,7 @@ void NaiveQTcpAgent::recv_helper(Packet *pkt) {
 
     // Update state
 	double now = Scheduler::instance().clock();
-    double rtt = now - tcph->ts_echo(); // TODO(akshayka): multipy by 1000?
+    double rtt = now - tcph->ts_echo();
     if (state_.min_rtt() == -1) {
         state_.set_min_rtt(rtt);
     } else if (rtt < state_.min_rtt()) {
